@@ -879,6 +879,13 @@ static TEE_Result stm32_pmic_init_it(const void *fdt, int node)
 		notif_register_driver(&stm32mp1_stpmic1_notif);
 
 	res = interrupt_dt_get(fdt, node, &itr_chip, &itr_num);
+	/*
+	 * Allow to not handle interrupts.
+	 * On STM32MP15 interrupts can be handled by linux.
+	 */
+	if (IS_ENABLED(CFG_STM32MP15) && (res == TEE_ERROR_ITEM_NOT_FOUND))
+		return TEE_SUCCESS;
+
 	if (res)
 		return res;
 
@@ -961,10 +968,7 @@ static TEE_Result stm32_pmic_probe(const void *fdt, int node,
 		panic();
 	}
 
-	if (IS_ENABLED(CFG_STM32MP13))
-		res = stm32_pmic_init_it(fdt, node);
-
-	return res;
+	return stm32_pmic_init_it(fdt, node);
 }
 
 static const struct dt_device_match stm32_pmic_match_table[] = {
