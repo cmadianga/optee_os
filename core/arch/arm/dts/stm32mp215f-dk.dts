@@ -225,18 +225,6 @@
 				regulator-name = "v3v3";
 				regulator-min-microvolt = <3300000>;
 				regulator-max-microvolt = <3300000>;
-				regulator-always-on;
-				st,pwrctrl-sel = <1>;
-				st,pwrctrl-enable;
-
-				default {
-					regulator-on-in-suspend;
-					regulator-suspend-microvolt = <3300000>;
-				};
-				lplv {
-					regulator-on-in-suspend;
-					regulator-suspend-microvolt = <3300000>;
-				};
 				standby {
 					regulator-off-in-suspend;
 				};
