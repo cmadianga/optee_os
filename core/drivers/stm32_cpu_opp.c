@@ -47,6 +47,7 @@ struct cpu_dvfs {
  * @clock: CPU clock handle
  * @regul: CPU regulator supply handle
  * @dvfs: Arrays of the supported CPU operating points
+ * @running: boolean meaning that the dynamic part of the opp driver is running
  * @scp_clock: Clock instance exposed to scp-firmware SCMI DVFS
  * @scp_regulator: Regulator instance exposed to scp-firmware SCMI DVFS
  * @scp_levels_desc: Description of voltage levels for scp-firmware SCMI DVFS
@@ -59,6 +60,7 @@ struct cpu_opp {
 	struct clk *clock;
 	struct regulator *regul;
 	struct cpu_dvfs *dvfs;
+	bool running;
 #ifdef CFG_SCPFW_MOD_DVFS
 	struct clk scp_clock;
 	struct regulator scp_regulator;
@@ -86,6 +88,9 @@ size_t stm32_cpu_opp_count(void)
 unsigned int stm32_cpu_opp_level(size_t opp_index)
 {
 	assert(opp_index < cpu_opp.opp_count);
+
+	/* Assume that the dynamic part of the OPP driver is used */
+	cpu_opp.running = true;
 
 	return cpu_opp.dvfs[opp_index].freq_khz;
 }
@@ -571,8 +576,7 @@ static TEE_Result cpu_opp_pm(enum pm_op op, unsigned int pm_hint,
 	assert(op == PM_OP_SUSPEND || op == PM_OP_RESUME);
 
 	/* nothing to do if OPP is managed by Linux and not by SCMI */
-	if (!IS_ENABLED(CFG_SCMI_MSG_PERF_DOMAIN) &&
-	    !IS_ENABLED(CFG_SCPFW_MOD_DVFS))
+	if (!cpu_opp.running)
 		return TEE_SUCCESS;
 
 #if defined(CFG_STM32MP25) || defined(CFG_STM32MP23) || defined(CFG_STM32MP21)
