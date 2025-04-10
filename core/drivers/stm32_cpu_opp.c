@@ -166,7 +166,7 @@ static TEE_Result set_clock_then_voltage(unsigned int opp)
 	TEE_Result res = TEE_ERROR_GENERIC;
 
 	if (_set_opp_clk_rate(opp)) {
-		EMSG("Failed to set clock to %ukHz",
+		EMSG("Failed to set OPP %ukHz",
 		     cpu_opp.dvfs[opp].freq_khz);
 		return TEE_ERROR_GENERIC;
 	}
@@ -179,6 +179,8 @@ static TEE_Result set_clock_then_voltage(unsigned int opp)
 	res = opp_set_voltage(cpu_opp.regul, cpu_opp.dvfs[opp].volt_uv);
 	if (res) {
 		unsigned int current_opp = cpu_opp.current_opp;
+
+		EMSG("Failed to set OPP %uuV", cpu_opp.dvfs[opp].volt_uv);
 
 		if (current_opp == cpu_opp.opp_count)
 			panic();
@@ -197,8 +199,10 @@ static TEE_Result set_voltage_then_clock(unsigned int opp)
 	TEE_Result res = TEE_ERROR_GENERIC;
 
 	res = opp_set_voltage(cpu_opp.regul, cpu_opp.dvfs[opp].volt_uv);
-	if (res)
+	if (res) {
+		EMSG("Failed to set OPP %uuV", cpu_opp.dvfs[opp].volt_uv);
 		return res;
+	}
 
 #ifdef CFG_STM32MP13
 	if (cpu_opp.dvfs[opp].volt_uv > MPU_RAM_LOW_SPEED_THRESHOLD)
@@ -209,7 +213,8 @@ static TEE_Result set_voltage_then_clock(unsigned int opp)
 		unsigned int current_opp = cpu_opp.current_opp;
 		unsigned int previous_volt = 0U;
 
-		EMSG("Failed to set clock");
+		EMSG("Failed to set OPP %ukHz",
+		     cpu_opp.dvfs[opp].freq_khz);
 
 		if (current_opp == cpu_opp.opp_count)
 			panic();
@@ -562,10 +567,6 @@ static TEE_Result set_opp(unsigned int opp)
 		res = set_voltage_then_clock(opp);
 	else
 		res = set_clock_then_voltage(opp);
-
-	if (res)
-		DMSG("Failed to set OPP %ukHz",
-		     cpu_opp.dvfs[opp].freq_khz);
 
 	return res;
 }
