@@ -232,10 +232,13 @@ static TEE_Result set_voltage_then_clock(unsigned int opp)
 static TEE_Result set_opp(unsigned int opp)
 {
 	unsigned long clk_cpu = clk_get_rate(cpu_opp.clock);
+	unsigned long clk_opp = cpu_opp.dvfs[opp].freq_khz * 1000U;
 	TEE_Result res = TEE_ERROR_GENERIC;
 
 	assert(clk_cpu);
-	if (cpu_opp.dvfs[opp].freq_khz * 1000U >= clk_cpu)
+	if (clk_opp == clk_cpu)
+		res = TEE_SUCCESS;
+	else if (clk_opp >= clk_cpu)
 		res = set_voltage_then_clock(opp);
 	else
 		res = set_clock_then_voltage(opp);
@@ -526,19 +529,10 @@ TEE_Result optee_scmi_server_init_dvfs(const void *fdt __unused,
 #ifdef CFG_SCMI_MSG_PERF_DOMAIN
 TEE_Result stm32_cpu_opp_set_level(unsigned int level)
 {
-	unsigned int current_level = 0;
 	TEE_Result res = TEE_ERROR_GENERIC;
 	unsigned int opp = 0;
 
 	mutex_lock(&cpu_opp_mu);
-
-	/* Perf level relates straight to CPU frequency in kHz */
-	current_level = cpu_opp.dvfs[cpu_opp.current_opp].freq_khz;
-
-	if (level == current_level) {
-		mutex_unlock(&cpu_opp_mu);
-		return TEE_SUCCESS;
-	}
 
 	for (opp = 0; opp < cpu_opp.opp_count; opp++)
 		if (level == cpu_opp.dvfs[opp].freq_khz)
@@ -549,11 +543,7 @@ TEE_Result stm32_cpu_opp_set_level(unsigned int level)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	if (level < current_level)
-		res = set_clock_then_voltage(opp);
-	else
-		res = set_voltage_then_clock(opp);
-
+	res = set_opp(opp);
 	if (!res)
 		cpu_opp.current_opp = opp;
 
