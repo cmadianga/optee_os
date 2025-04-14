@@ -95,15 +95,6 @@ unsigned int stm32_cpu_opp_level(size_t opp_index)
 	return cpu_opp.dvfs[opp_index].freq_khz;
 }
 
-static TEE_Result _set_opp_clk_rate(unsigned int opp)
-{
-#ifdef CFG_STM32MP15
-	return stm32mp1_set_opp_khz(cpu_opp.dvfs[opp].freq_khz);
-#else
-	return clk_set_rate(cpu_opp.clock, cpu_opp.dvfs[opp].freq_khz * 1000UL);
-#endif
-}
-
 static TEE_Result opp_set_voltage(struct regulator *regul, int volt_uv)
 {
 	return regulator_set_voltage(regul, volt_uv);
@@ -159,6 +150,15 @@ bool opp_voltage_is_supported(struct regulator *regul, uint32_t *volt_uv)
 	*volt_uv = new_volt_uv;
 
 	return true;
+}
+
+static TEE_Result _set_opp_clk_rate(unsigned int opp)
+{
+#ifdef CFG_STM32MP15
+	return stm32mp1_set_opp_khz(cpu_opp.dvfs[opp].freq_khz);
+#else
+	return clk_set_rate(cpu_opp.clock, cpu_opp.dvfs[opp].freq_khz * 1000UL);
+#endif
 }
 
 static TEE_Result set_clock_then_voltage(unsigned int opp)
@@ -227,6 +227,20 @@ static TEE_Result set_voltage_then_clock(unsigned int opp)
 	}
 
 	return TEE_SUCCESS;
+}
+
+static TEE_Result set_opp(unsigned int opp)
+{
+	unsigned long clk_cpu = clk_get_rate(cpu_opp.clock);
+	TEE_Result res = TEE_ERROR_GENERIC;
+
+	assert(clk_cpu);
+	if (cpu_opp.dvfs[opp].freq_khz * 1000U >= clk_cpu)
+		res = set_voltage_then_clock(opp);
+	else
+		res = set_clock_then_voltage(opp);
+
+	return res;
 }
 
 #ifdef CFG_SCPFW_MOD_DVFS
@@ -558,20 +572,6 @@ TEE_Result stm32_cpu_opp_read_level(unsigned int *level)
 	return TEE_SUCCESS;
 }
 #endif /*CFG_SCMI_MSG_PERF_DOMAIN*/
-
-static TEE_Result set_opp(unsigned int opp)
-{
-	unsigned long clk_cpu = clk_get_rate(cpu_opp.clock);
-	TEE_Result res = TEE_ERROR_GENERIC;
-
-	assert(clk_cpu);
-	if (cpu_opp.dvfs[opp].freq_khz * 1000U >= clk_cpu)
-		res = set_voltage_then_clock(opp);
-	else
-		res = set_clock_then_voltage(opp);
-
-	return res;
-}
 
 static TEE_Result cpu_opp_pm(enum pm_op op, unsigned int pm_hint,
 			     const struct pm_callback_handle *hdl __unused)
