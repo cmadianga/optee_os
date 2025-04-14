@@ -71,7 +71,7 @@ struct cpu_opp {
 
 static struct cpu_opp cpu_opp;
 
-#ifndef CFG_SCPFW_MOD_DVFS
+#ifdef CFG_SCMI_MSG_PERF_DOMAIN
 /* Mutex for protecting CPU OPP changes */
 static struct mutex cpu_opp_mu = MUTEX_INITIALIZER;
 #endif
@@ -507,7 +507,9 @@ TEE_Result optee_scmi_server_init_dvfs(const void *fdt __unused,
 
 	return TEE_SUCCESS;
 }
-#else /*CFG_SCPFW_MOD_DVFS*/
+#endif /*CFG_SCPFW_MOD_DVFS*/
+
+#ifdef CFG_SCMI_MSG_PERF_DOMAIN
 TEE_Result stm32_cpu_opp_set_level(unsigned int level)
 {
 	unsigned int current_level = 0;
@@ -555,7 +557,7 @@ TEE_Result stm32_cpu_opp_read_level(unsigned int *level)
 
 	return TEE_SUCCESS;
 }
-#endif /*CFG_SCPFW_MOD_DVFS*/
+#endif /*CFG_SCMI_MSG_PERF_DOMAIN*/
 
 static TEE_Result set_opp(unsigned int opp)
 {
