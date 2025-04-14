@@ -8,6 +8,7 @@
 #include <drivers/clk_dt.h>
 #include <drivers/regulator.h>
 #include <drivers/stm32_cpu_opp.h>
+#include <drivers/stm32mp_dt_bindings.h>
 #ifdef CFG_STM32MP13
 #include <drivers/stm32mp1_pwr.h>
 #endif
@@ -15,6 +16,7 @@
 #include <io.h>
 #include <keep.h>
 #include <kernel/boot.h>
+#include <kernel/delay_arch.h>
 #include <kernel/dt.h>
 #include <kernel/mutex.h>
 #include <kernel/panic.h>
@@ -24,9 +26,14 @@
 #include <scmi_agent_configuration.h>
 #endif
 #include <stm32mp_pm.h>
+#if defined(CFG_STM32MP21) || defined(CFG_STM32MP23) || defined(CFG_STM32MP25)
+#include <stm32_sysconf.h>
+#endif
 #include <stm32_util.h>
 #include <trace.h>
 #include <util.h>
+
+#define TIMEOUT_US_OPP			U(1000)
 
 /*
  * struct cpu_dvfs - CPU DVFS registered operating points
@@ -140,6 +147,7 @@ bool opp_voltage_is_supported(struct regulator *regul, uint32_t *volt_uv)
 	return true;
 }
 
+#if defined(CFG_STM32MP13) || defined(CFG_STM32MP15)
 static TEE_Result _set_opp_clk_rate(unsigned int opp)
 {
 #ifdef CFG_STM32MP15
@@ -233,6 +241,189 @@ static TEE_Result set_opp(unsigned int opp)
 
 	return res;
 }
+#endif /* CFG_STM32MP13 || CFG_STM32MP15 */
+
+#if defined(CFG_STM32MP21) || defined(CFG_STM32MP23) || defined(CFG_STM32MP25)
+/*
+ * To guarantee a correct synchronization of the ARM counter with STGEN and
+ * TSGEN counter, they has to be isolated during DVFS request with LPI register.
+ * Once this is done on STGEN, the ARM generic timer and associated delays or
+ * timeouts are not functional.
+ */
+static void ca35ss_lpi_isolate(bool *tsgen)
+{
+	struct clk *dbg_clk = stm32mp_rcc_clock_id_to_clk(CK_SYSDBG);
+	uint64_t timeout = 0;
+	uint32_t counter = UINT32_MAX;
+
+	*tsgen = false;
+
+	/* Isolate TSGEN for debug only if associated clock is enabled */
+	if (clk_is_enabled(dbg_clk)) {
+		stm32mp_syscfg_write(CA35SS_SSC_LPI_TSGEN_NTS_CR, 0,
+				     CA35SS_SSC_LPI_TSGEN_CSYSREQ);
+		timeout = timeout_init_us(TIMEOUT_US_OPP);
+		while (stm32mp_syscfg_read(CA35SS_SSC_LPI_TSGEN_NTS_CR)
+			& CA35SS_SSC_LPI_TSGEN_CSYSACK) {
+			if (timeout_elapsed(timeout))
+				panic("Timeout CA35SS_SSC_LPI_TSGEN_CSYSACK");
+		}
+		*tsgen = true;
+	}
+
+	/* Isolate STGEN: Clear bit and waiting ACK */
+	stm32mp_syscfg_write(CA35SS_SSC_LPI_STGEN_NTS_CR, 0,
+			     CA35SS_SSC_LPI_STGEN_CSYSREQ);
+	while (stm32mp_syscfg_read(CA35SS_SSC_LPI_STGEN_NTS_CR)
+		& CA35SS_SSC_LPI_STGEN_CSYSACK) {
+		/* With STGEN isolated, timer is not functional */
+		counter--;
+		if (!counter)
+			panic("Timeout CA35SS_SSC_LPI_STGEN_CSYSACK");
+	}
+}
+
+static void ca35ss_lpi_restore(bool tsgen)
+{
+	uint64_t timeout = 0;
+	uint32_t counter = UINT32_MAX;
+
+	/* Set bit REQ for STGEN and polling ACK */
+	stm32mp_syscfg_write(CA35SS_SSC_LPI_STGEN_NTS_CR,
+			     CA35SS_SSC_LPI_STGEN_CSYSREQ,
+			     CA35SS_SSC_LPI_STGEN_CSYSREQ);
+	while (!(stm32mp_syscfg_read(CA35SS_SSC_LPI_STGEN_NTS_CR)
+		 & CA35SS_SSC_LPI_STGEN_CSYSACK)) {
+		/* With STGEN isolated, timer is not functional */
+		counter--;
+		if (!counter)
+			panic("Timeout CA35SS_SSC_LPI_STGEN_CSYSACK");
+	}
+
+	/* Set bit REQ for TSGEN and polling ACK */
+	if (tsgen) {
+		stm32mp_syscfg_write(CA35SS_SSC_LPI_TSGEN_NTS_CR,
+				     CA35SS_SSC_LPI_TSGEN_CSYSREQ,
+				     CA35SS_SSC_LPI_TSGEN_CSYSREQ);
+		timeout = timeout_init_us(TIMEOUT_US_OPP);
+		while (!(stm32mp_syscfg_read(CA35SS_SSC_LPI_TSGEN_NTS_CR)
+			 & CA35SS_SSC_LPI_TSGEN_CSYSACK)) {
+			if (timeout_elapsed(timeout))
+				panic("Timeout CA35SS_SSC_LPI_TSGEN_CSYSACK");
+		}
+	}
+}
+
+/*
+ * Configure CA35SS for new OPP with syscfg register SSC_MEM and OPP_REQ
+ * the parameter overdrive indicates if the new OPP has an overdrive frequency
+ * NB: as STGEN is deactivated during OPP request, use polling without timeout
+ */
+static void ca35ss_configure_opp(unsigned int overdrive)
+{
+	uint32_t mem_ctrl = stm32mp_syscfg_read(CA35SS_SSC_MEM_CTRL);
+	bool tsgen = false;
+	uint32_t counter = UINT32_MAX;
+	uint32_t exceptions;
+
+	/*
+	 * SSC_MEM control the speed of memories inside Cortex-A35
+	 * - RME: 0 default margin setting for nominal Cortex-A35 frequencies
+	 * - RME: 1 margin setting from RM[2:0]
+	 * - RM: CA35SS_SSC_MEM_CTRL_RM_OVERDRIVE the recommended value for
+	 *       Cortex-A35 overdrive frequencies, not used if RME = 0
+	 *
+	 * This function configure the CA35SS values only if the OPP change
+	 * (nominal vs overdrive)
+	 */
+	if (overdrive) {
+		if (mem_ctrl & CA35SS_SSC_MEM_CTRL_RME)
+			return;
+
+		stm32mp_syscfg_write(CA35SS_SSC_MEM_CTRL,
+				     CA35SS_SSC_MEM_CTRL_RME |
+				     CA35SS_SSC_MEM_CTRL_RM_OVERDRIVE,
+				     CA35SS_SSC_MEM_CTRL_RME |
+				     CA35SS_SSC_MEM_CTRL_RM_MASK);
+	} else {
+		if (!(mem_ctrl & CA35SS_SSC_MEM_CTRL_RME))
+			return;
+
+		stm32mp_syscfg_write(CA35SS_SSC_MEM_CTRL,
+				     CA35SS_SSC_MEM_CTRL_RM_OVERDRIVE,
+				     CA35SS_SSC_MEM_CTRL_RME |
+				     CA35SS_SSC_MEM_CTRL_RM_MASK);
+	}
+
+	exceptions = thread_mask_exceptions(THREAD_EXCP_ALL);
+
+	ca35ss_lpi_isolate(&tsgen);
+
+	/* Launch the OPP request*/
+	stm32mp_syscfg_write(CA35SS_SSC_OPP_REQ, CA35SS_SSC_OPP_REQ_REQ,
+			     CA35SS_SSC_OPP_REQ_REQ);
+
+	/* Wait for the request to be complete */
+	while (!(stm32mp_syscfg_read(CA35SS_SSC_OPP_REQ)
+		 & CA35SS_SSC_OPP_REQ_ACK)) {
+		/* After LPI isolate, the ARM generic timer is frozen  */
+		counter--;
+		if (!counter)
+			panic("Timeout CA35SS_SSC_OPP_REQ_ACK");
+	}
+
+	/* Stop the OPP request */
+	stm32mp_syscfg_write(CA35SS_SSC_OPP_REQ, 0, CA35SS_SSC_OPP_REQ_REQ);
+
+	ca35ss_lpi_restore(tsgen);
+
+	/* Restore interrupts */
+	thread_unmask_exceptions(exceptions);
+}
+
+static TEE_Result set_opp(unsigned int opp)
+{
+	bool overdrive = false;
+	unsigned int def_freq_khz = cpu_opp.dvfs[cpu_opp.default_opp].freq_khz;
+	unsigned int opp_freq_khz = cpu_opp.dvfs[opp].freq_khz;
+	int opp_volt_uv = cpu_opp.dvfs[opp].volt_uv;
+	int res = TEE_ERROR_GENERIC;
+
+	if (opp_freq_khz == clk_get_rate(cpu_opp.clock))
+		return TEE_SUCCESS;
+
+	/* The default OPP is the OPP with nominal frequency */
+	if (opp_freq_khz > def_freq_khz)
+		overdrive = true;
+
+	/* switch to bypass and disable PLL1 */
+	clk_set_parent(cpu_opp.clock,
+		       clk_get_parent_by_index(cpu_opp.clock, 1));
+
+	/* Change OPP/RM(nominal) when moving OPP Overdrive to Nominal */
+	if (!overdrive)
+		ca35ss_configure_opp(false);
+
+	/* Update voltage */
+	res = opp_set_voltage(cpu_opp.regul, opp_volt_uv);
+	if (res) {
+		EMSG("Failed to set OPP %uuV", opp_volt_uv);
+		return res;
+	}
+
+	/* Change OPP/RM(overdrive) when moving OPP Nominal to Overdrive */
+	if (overdrive)
+		ca35ss_configure_opp(true);
+
+	/* Configure and start PLL1 */
+	if (clk_set_rate(cpu_opp.clock, opp_freq_khz * 1000UL)) {
+		EMSG("Failed to set OPP %ukHz", opp_freq_khz);
+		return TEE_ERROR_GENERIC;
+	}
+
+	return TEE_SUCCESS;
+}
+#endif /* CFG_STM32MP21 || CFG_STM32MP23 || CFG_STM32MP25*/
 
 #ifdef CFG_SCPFW_MOD_DVFS
 /* Request to switch to CPU operating point related to @rate */
@@ -649,8 +840,12 @@ stm32_cpu_init(const void *fdt, int node, const void *compat_data __unused)
 }
 
 static const struct dt_device_match stm32_cpu_match_table[] = {
+#if defined(CFG_STM32MP13) || defined(CFG_STM32MP15)
 	{ .compatible = "arm,cortex-a7" },
+#endif
+#if defined(CFG_STM32MP21) || defined(CFG_STM32MP23) || defined(CFG_STM32MP25)
 	{ .compatible = "arm,cortex-a35" },
+#endif
 	{ }
 };
 
