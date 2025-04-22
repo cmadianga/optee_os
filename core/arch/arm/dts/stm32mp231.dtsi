@@ -770,6 +770,11 @@
 				st,non-secure-otp-provisioning;
 			};
 
+			tfm_iak: otp352@580 {
+				reg = <0x580 0x20>;
+				st,non-secure-otp-provisioning;
+			};
+
 			oem_enc_key_2: otp360@5a0 {
 				reg = <0x5a0 0x10>;
 				st,non-secure-otp-provisioning;
