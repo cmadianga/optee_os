@@ -241,27 +241,33 @@ static TEE_Result stm32mp2_rproc_start(struct stm32_rproc_instance *rproc)
 					   mems[i].size))
 			continue;
 
-#if defined(CFG_STM32MP25) || defined(CFG_STM32MP23) || defined(CFG_STM32MP21)
-		if (rproc->tzen) {
-			stm32mp_syscfg_write(A35SSC_M33_INITSVTOR_CR,
-					     rproc->boot_addr, INITVTOR_MASK);
-
-			stm32mp_syscfg_write(A35SSC_M33_TZEN_CR,
-					     A35SSC_M33_TZEN_CR_CFG_SECEXT,
-					     A35SSC_M33_TZEN_CR_CFG_SECEXT);
-		} else {
-			stm32mp_syscfg_write(A35SSC_M33_INITNSVTOR_CR,
-					     rproc->boot_addr, INITVTOR_MASK);
-		}
 		boot_addr_valid = true;
 		break;
-#endif
 	}
 
 	if (!boot_addr_valid) {
 		EMSG("Invalid boot address");
 		return TEE_ERROR_GENERIC;
 	}
+
+#if defined(CFG_STM32MP25) || defined(CFG_STM32MP23) || defined(CFG_STM32MP21)
+	if (rproc->tzen) {
+		stm32mp_syscfg_write(CA35SS_SYSCFG_M33_INITSVTOR_CR,
+				     rproc->boot_addr, INITVTOR_MASK);
+		stm32mp_syscfg_write(CA35SS_SYSCFG_M33_INITNSVTOR_CR,
+				     0, INITVTOR_MASK);
+	} else {
+		stm32mp_syscfg_write(CA35SS_SYSCFG_M33_INITSVTOR_CR,
+				     0, INITVTOR_MASK);
+		stm32mp_syscfg_write(CA35SS_SYSCFG_M33_INITNSVTOR_CR,
+				     rproc->boot_addr, INITVTOR_MASK);
+	}
+
+	stm32mp_syscfg_write(CA35SS_SYSCFG_M33_TZEN_CR,
+			     rproc->tzen ?
+				CA35SS_SYSCFG_M33_TZEN_CR_CFG_SECEXT : 0,
+			     CA35SS_SYSCFG_M33_TZEN_CR_CFG_SECEXT);
+#endif
 
 	return TEE_SUCCESS;
 }
@@ -309,8 +315,8 @@ static TEE_Result rproc_stop(struct stm32_rproc_instance *rproc)
 
 #if defined(CFG_STM32MP25) || defined(CFG_STM32MP23) || defined(CFG_STM32MP21)
 	/* Disable the TrustZone */
-	stm32mp_syscfg_write(A35SSC_M33_TZEN_CR, 0,
-			     A35SSC_M33_TZEN_CR_CFG_SECEXT);
+	stm32mp_syscfg_write(CA35SS_SYSCFG_M33_TZEN_CR, 0,
+			     CA35SS_SYSCFG_M33_TZEN_CR_CFG_SECEXT);
 #endif
 
 	rproc->boot_addr = 0;
@@ -706,12 +712,13 @@ static void stm32_rproc_cleanup(struct stm32_rproc_instance *rproc)
 static void stm32_rproc_a35ss_cfg(struct stm32_rproc_instance *rproc __unused)
 {
 #if defined(CFG_STM32MP25) || defined(CFG_STM32MP23) || defined(CFG_STM32MP21)
-	stm32mp_syscfg_write(A35SSC_M33CFG_ACCESS_CR, rproc->m33_cr_right,
-			     A35SSC_M33_TZEN_CR_M33CFG_SEC |
-			     A35SSC_M33_TZEN_CR_M33CFG_PRIV);
+	stm32mp_syscfg_write(CA35SS_SYSCFG_M33_ACCESS_CR,
+			     rproc->m33_cr_right,
+			     CA35SS_SYSCFG_M33_ACCESS_CR_SEC |
+			     CA35SS_SYSCFG_M33_ACCESS_CR_PRIV);
 	/* Disable the TrustZone that is enabled by default */
-	stm32mp_syscfg_write(A35SSC_M33_TZEN_CR, 0,
-			     A35SSC_M33_TZEN_CR_CFG_SECEXT);
+	stm32mp_syscfg_write(CA35SS_SYSCFG_M33_TZEN_CR, 0,
+			     CA35SS_SYSCFG_M33_TZEN_CR_CFG_SECEXT);
 
 #endif
 }
@@ -847,8 +854,8 @@ static TEE_Result stm32_rproc_probe(const void *fdt, int node,
 		return TEE_ERROR_OUT_OF_MEMORY;
 
 #if defined(CFG_STM32MP25) || defined(CFG_STM32MP23) || defined(CFG_STM32MP21)
-	rproc->m33_cr_right = A35SSC_M33_TZEN_CR_M33CFG_SEC |
-			      A35SSC_M33_TZEN_CR_M33CFG_PRIV;
+	rproc->m33_cr_right = CA35SS_SYSCFG_M33_ACCESS_CR_SEC |
+			      CA35SS_SYSCFG_M33_ACCESS_CR_PRIV;
 #endif
 
 	rproc->cdata = comp_data;
@@ -896,10 +903,10 @@ static TEE_Result stm32_rproc_probe(const void *fdt, int node,
 	if (rproc->cdata->ns_loading) {
 		/*
 		 * The remote firmware will be loaded by the non secure
-		 * Provide access rights to A35SSC_M33 registers
+		 * Provide access rights to CA35SS_SYSCFG_M33 registers
 		 * to the non secure context
 		 */
-		rproc->m33_cr_right = A35SSC_M33_TZEN_CR_M33CFG_PRIV;
+		rproc->m33_cr_right = CA35SS_SYSCFG_M33_ACCESS_CR_PRIV;
 	}
 	stm32_rproc_a35ss_cfg(rproc);
 #endif
