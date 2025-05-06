@@ -372,8 +372,8 @@ static TEE_Result stm32mp1_pwr_itr_dt_get(struct dt_pargs *args,
 	if (res)
 		return res;
 
-	res = gpio_dt_get_by_index(args->fdt, args->phandle_node, itr_num,
-				   "wakeup", &gpio);
+	res = gpio_dt_cfg_by_index(args->fdt, args->phandle_node, itr_num,
+				   "wakeup", GPIO_IN, &gpio);
 	if (res)
 		return res;
 
