@@ -300,6 +300,7 @@ static TEE_Result stm32_uart_pm(enum pm_op op, uint32_t pm_hint,
 
 	return res;
 }
+DECLARE_KEEP_PAGER_PM(stm32_uart_pm);
 
 static TEE_Result stm32_uart_probe(const void *fdt, int node,
 				   const void *compt_data __unused)
