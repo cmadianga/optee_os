@@ -235,9 +235,14 @@ static void dt_get_regu_low_power_config(const void *fdt, const char *regu_name,
  */
 void stm32mp_pmic_apply_lp_config(const char *lp_state)
 {
-	unsigned int state_idx = regu_lp_state2idx(lp_state);
-	struct regu_lp_state *state = &regu_lp_state[state_idx];
+	struct regu_lp_state *state = NULL;
 	size_t i = 0;
+
+	/* If lp_state is NULL, nothing to do */
+	if (!lp_state)
+		return;
+
+	state = &regu_lp_state[regu_lp_state2idx(lp_state)];
 
 	if (stpmic1_powerctrl_on())
 		panic();
