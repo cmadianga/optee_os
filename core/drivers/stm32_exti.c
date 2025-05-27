@@ -18,19 +18,19 @@
 #include <util.h>
 
 /* Registers */
-#define _EXTI_RTSR(n)		(0x000U + (n) * 0x20U)
-#define _EXTI_FTSR(n)		(0x004U + (n) * 0x20U)
-#define _EXTI_RPR(n)		(0x00cU + (n) * 0x20U)
-#define _EXTI_FPR(n)		(0x010U + (n) * 0x20U)
-#define _EXTI_SECCFGR(n)	(0x014U + (n) * 0x20U)
-#define _EXTI_PRIVCFGR(n)	(0x018U + (n) * 0x20U)
-#define _EXTI_CR(n)		(0x060U + (n) * 4U)
-#define _EXTI_LOCKR		0x070U
-#define _EXTI_C1IMR(n)		(0x080U + (n) * 0x10U)
-#define _EXTI_EnCIDCFGR(n)	(0x180U + (n) * 4U)
-#define _EXTI_CmCIDCFGR(n)	(0x300U + (n) * 4U)
-#define _EXTI_TRG(n)		(0x3ecU - (n) * 4U) /* HWCFGR2 .. HWCFGR4 */
-#define _EXTI_HWCFGR1		0x3f0U
+#define _EXTI_RTSR(n)			(0x000U + (n) * 0x20U)
+#define _EXTI_FTSR(n)			(0x004U + (n) * 0x20U)
+#define _EXTI_RPR(n)			(0x00cU + (n) * 0x20U)
+#define _EXTI_FPR(n)			(0x010U + (n) * 0x20U)
+#define _EXTI_SECCFGR(n)		(0x014U + (n) * 0x20U)
+#define _EXTI_PRIVCFGR(n)		(0x018U + (n) * 0x20U)
+#define _EXTI_CR(n)			(0x060U + (n) * 4U)
+#define _EXTI_LOCKR			0x070U
+#define _EXTI_C1IMR(n)			(0x080U + (n) * 0x10U)
+#define _EXTI_EnCIDCFGR(n)		(0x180U + (n) * 4U)
+#define _EXTI_CmCIDCFGR(n)		(0x300U + (n) * 4U)
+#define _EXTI_TRG(n)			(0x3ecU - (n) * 4U) /* HWCFGR2..4 */
+#define _EXTI_HWCFGR1			0x3f0U
 
 /* SECCFGR register bitfields */
 #define _EXTI_SECCFGR_MASK		GENMASK_32(31, 0)
@@ -54,9 +54,9 @@
 #define _EXTI_HWCFGR1_CIDWIDTH_MASK	GENMASK_32(27, 24)
 #define _EXTI_HWCFGR1_CIDWIDTH_SHIFT	24U
 
-#define _EXTI_MAX_CR		4U
-#define _EXTI_BANK_NR		3U
-#define _EXTI_LINES_PER_BANK	32U
+#define _EXTI_MAX_CR			4U
+#define _EXTI_BANK_NR			3U
+#define _EXTI_LINES_PER_BANK		32U
 
 /*
  * struct stm32_exti_itr_hierarchy - EXTI line interrupt hierarchy
