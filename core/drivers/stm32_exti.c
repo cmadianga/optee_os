@@ -14,7 +14,6 @@
 #include <kernel/spinlock.h>
 #include <libfdt.h>
 #include <mm/core_memprot.h>
-#include <sys/queue.h>
 #include <tee_api_types.h>
 #include <util.h>
 
@@ -88,8 +87,6 @@ struct stm32_exti_pdata {
 	uint32_t *c_cids;
 	struct stm32_exti_itr_hierarchy *
 		hierarchy[_EXTI_LINES_PER_BANK * _EXTI_BANK_NR];
-
-	SLIST_ENTRY(stm32_exti_pdata) link;
 
 	bool glock;
 };
