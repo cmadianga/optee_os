@@ -48,7 +48,6 @@ struct stm32_pwr_data {
 	vaddr_t base;
 	struct itr_chip *pwr_irq_chip;
 	struct itr_handler *parent_hdl;
-	struct stm32_exti_pdata *exti;
 	unsigned int spinlock;
 	uint8_t itr_enable_bitmask;
 	uint8_t itr_mask_bitmask;
