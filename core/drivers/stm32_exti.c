@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Copyright (c) 2021-2023, STMicroelectronics
+ * Copyright (c) 2021-2025, STMicroelectronics
  */
 
 #include <drivers/stm32_rif.h>
@@ -42,8 +42,10 @@
 #define _EXTI_LOCKR_GLOCK		BIT(0)
 
 /* CIDCFGR register bitfields */
+#define _EXTI_CIDCFGR_CFEN		BIT(0)
 #define _EXTI_CIDCFGR_SCID_MASK		GENMASK_32(6, 4)
-#define _EXTI_CIDCFGR_CONF_MASK		(_CIDCFGR_CFEN | \
+#define _EXTI_CIDCFGR_SCID_SHIFT	4U
+#define _EXTI_CIDCFGR_CONF_MASK		(_EXTI_CIDCFGR_CFEN | \
 					 _EXTI_CIDCFGR_SCID_MASK)
 
 /* _EXTI_HWCFGR1 bit fields */
@@ -57,6 +59,8 @@
 #define _EXTI_MAX_CR			4U
 #define _EXTI_BANK_NR			3U
 #define _EXTI_LINES_PER_BANK		32U
+
+#define _EXTI_CID1			0x1U
 
 /*
  * struct stm32_exti_itr_hierarchy - EXTI line interrupt hierarchy
@@ -405,6 +409,27 @@ static const struct itr_ops stm32_exti_ops = {
 };
 DECLARE_KEEP_PAGER(stm32_exti_ops);
 
+static TEE_Result stm32_exti_rif_check_access(struct stm32_exti_pdata *exti,
+					      uint32_t exti_line)
+{
+	uint32_t mask = BIT(exti_line % _EXTI_LINES_PER_BANK);
+	unsigned int i = 0;
+
+	i = stm32_exti_get_bank(exti_line);
+
+	/* only configured as secure and privileged */
+	if (!((exti->seccfgr_cache[i] & exti->privcfgr_cache[i] &
+	       exti->access_mask[i]) & mask))
+		return TEE_ERROR_ACCESS_DENIED;
+
+	if ((exti->e_cids[exti_line] & _EXTI_CIDCFGR_CFEN) &&
+	    ((exti->e_cids[exti_line] & _EXTI_CIDCFGR_SCID_MASK) !=
+	     (_EXTI_CID1 << _EXTI_CIDCFGR_SCID_SHIFT)))
+		return TEE_ERROR_ACCESS_DENIED;
+
+	return TEE_SUCCESS;
+}
+
 static void stm32_exti_rif_parse_dt(struct stm32_exti_pdata *exti,
 				    const void *fdt, int node)
 {
@@ -457,7 +482,7 @@ static void stm32_exti_rif_parse_dt(struct stm32_exti_pdata *exti,
 			panic("CID out of range");
 
 		exti->c_cids[pos - 1] = (c_cid << _CIDCFGR_SCID_SHIFT) |
-					_CIDCFGR_CFEN;
+					_EXTI_CIDCFGR_CFEN;
 	}
 }
 
@@ -523,7 +548,7 @@ static TEE_Result stm32_exti_rif_apply(const struct stm32_exti_pdata *exti)
 				_EXTI_CIDCFGR_CONF_MASK, exti->e_cids[event]);
 	}
 	for (i = 0; i < stm32_exti_nbcpus(exti); i++) {
-		if (!(exti->c_cids[i] & _CIDCFGR_CFEN))
+		if (!(exti->c_cids[i] & _EXTI_CIDCFGR_CFEN))
 			continue;
 
 		io_clrsetbits32(exti->base + _EXTI_CmCIDCFGR(i),
@@ -697,6 +722,13 @@ stm32_exti_dt_get_chip_cb(struct dt_pargs *pargs, void *priv_data,
 	if (exti_line >= stm32_exti_nbevents(exti))
 		return TEE_ERROR_GENERIC;
 
+	/* With RIF, check the permission */
+	if (IS_ENABLED(CFG_STM32_RIF) && stm32_exti_maxcid(exti)) {
+		res = stm32_exti_rif_check_access(exti, exti_line);
+		if (res)
+			return res;
+	}
+
 	hierarchy = exti->hierarchy[exti_line];
 	if (!hierarchy) {
 		hierarchy = calloc(1, sizeof(*hierarchy));
@@ -726,10 +758,7 @@ stm32_exti_dt_get_chip_cb(struct dt_pargs *pargs, void *priv_data,
 	if (stm32_exti_event_is_configurable(exti, exti_line))
 		stm32_exti_set_type(exti, exti_line, type);
 
-	/*
-	 * Without RIF, predate the line by setting it as secure.
-	 * TODO: with RIF, check the permission
-	 */
+	/* Without RIF, predate the line by setting it as secure */
 	if (!IS_ENABLED(CFG_STM32_RIF) || !stm32_exti_maxcid(exti))
 		stm32_exti_set_tz(exti, exti_line);
 
