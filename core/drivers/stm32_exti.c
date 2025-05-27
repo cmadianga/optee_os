@@ -469,9 +469,6 @@ static TEE_Result stm32_exti_rif_apply(const struct stm32_exti_pdata *exti)
 	uint32_t event = 0;
 	unsigned int i = 0;
 
-	if (!exti->e_cids)
-		return TEE_SUCCESS;
-
 	res = stm32_rifsc_check_tdcid(&is_tdcid);
 	if (res)
 		return res;
