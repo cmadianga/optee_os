@@ -51,7 +51,6 @@ enum wkup_pull_setting {
 struct pwr_wkup_data {
 	struct itr_chip *pwr_irq_chip;
 	struct itr_handler *parent_hdl;
-	struct stm32_exti_pdata *exti;
 	unsigned int spinlock;
 	uint8_t itr_enable_bitmask;
 	uint8_t itr_mask_bitmask;
