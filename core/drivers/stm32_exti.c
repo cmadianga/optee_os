@@ -101,20 +101,18 @@ itr_chip_to_stm32_exti_pdata(struct itr_chip *chip)
 	return container_of(chip, struct stm32_exti_pdata, chip);
 }
 
-static uint32_t stm32_exti_get_bank(uint32_t exti_line)
+static unsigned int stm32_exti_get_bank(uint32_t exti_line)
 {
-	uint32_t bank = 0;
-
 	if (exti_line < _EXTI_LINES_PER_BANK)
-		bank = 0;
-	else if (exti_line < 2 * _EXTI_LINES_PER_BANK)
-		bank = 1;
-	else if (exti_line < 3 * _EXTI_LINES_PER_BANK)
-		bank = 2;
-	else
-		panic();
+		return 0;
 
-	return bank;
+	if (exti_line < 2 * _EXTI_LINES_PER_BANK)
+		return 1;
+
+	if (exti_line < 3 * _EXTI_LINES_PER_BANK)
+		return 2;
+
+	panic();
 }
 
 static inline uint32_t stm32_exti_maxcid(const struct stm32_exti_pdata *exti)
@@ -154,11 +152,11 @@ stm32_exti_event_is_configurable(const struct stm32_exti_pdata *exti,
 static void stm32_exti_set_type(struct stm32_exti_pdata *exti,
 				uint32_t exti_line, uint32_t type)
 {
+	unsigned int i = stm32_exti_get_bank(exti_line);
 	uint32_t mask = BIT(exti_line % _EXTI_LINES_PER_BANK);
 	uint32_t r_trig = 0;
 	uint32_t f_trig = 0;
 	uint32_t exceptions = 0;
-	unsigned int i = 0;
 
 	switch (type) {
 	case IRQ_TYPE_EDGE_RISING:
@@ -178,8 +176,6 @@ static void stm32_exti_set_type(struct stm32_exti_pdata *exti,
 		panic();
 	}
 
-	i = stm32_exti_get_bank(exti_line);
-
 	exceptions = cpu_spin_lock_xsave(&exti->lock);
 
 	io_mask32(exti->base + _EXTI_RTSR(i), r_trig, mask);
@@ -190,11 +186,9 @@ static void stm32_exti_set_type(struct stm32_exti_pdata *exti,
 
 static void stm32_exti_mask(struct stm32_exti_pdata *exti, uint32_t exti_line)
 {
+	unsigned int i = stm32_exti_get_bank(exti_line);
 	uint32_t mask = BIT(exti_line % _EXTI_LINES_PER_BANK);
 	uint32_t exceptions = 0;
-	unsigned int i = 0;
-
-	i = stm32_exti_get_bank(exti_line);
 
 	exceptions = cpu_spin_lock_xsave(&exti->lock);
 
@@ -207,11 +201,9 @@ static void stm32_exti_mask(struct stm32_exti_pdata *exti, uint32_t exti_line)
 static void stm32_exti_unmask(struct stm32_exti_pdata *exti,
 			      uint32_t exti_line)
 {
+	unsigned int i = stm32_exti_get_bank(exti_line);
 	uint32_t mask = BIT(exti_line % _EXTI_LINES_PER_BANK);
 	uint32_t exceptions = 0;
-	unsigned int i = 0;
-
-	i = stm32_exti_get_bank(exti_line);
 
 	exceptions = cpu_spin_lock_xsave(&exti->lock);
 
@@ -224,11 +216,9 @@ static void stm32_exti_unmask(struct stm32_exti_pdata *exti,
 static void stm32_exti_enable_wake(struct stm32_exti_pdata *exti,
 				   uint32_t exti_line)
 {
+	unsigned int i = stm32_exti_get_bank(exti_line);
 	uint32_t mask = BIT(exti_line % _EXTI_LINES_PER_BANK);
 	uint32_t exceptions = 0;
-	unsigned int i = 0;
-
-	i = stm32_exti_get_bank(exti_line);
 
 	exceptions = cpu_spin_lock_xsave(&exti->lock);
 
@@ -240,11 +230,9 @@ static void stm32_exti_enable_wake(struct stm32_exti_pdata *exti,
 static void stm32_exti_disable_wake(struct stm32_exti_pdata *exti,
 				    uint32_t exti_line)
 {
+	unsigned int i = stm32_exti_get_bank(exti_line);
 	uint32_t mask = BIT(exti_line % _EXTI_LINES_PER_BANK);
 	uint32_t exceptions = 0;
-	unsigned int i = 0;
-
-	i = stm32_exti_get_bank(exti_line);
 
 	exceptions = cpu_spin_lock_xsave(&exti->lock);
 
@@ -255,11 +243,9 @@ static void stm32_exti_disable_wake(struct stm32_exti_pdata *exti,
 
 static void stm32_exti_clear(struct stm32_exti_pdata *exti, uint32_t exti_line)
 {
+	unsigned int i = stm32_exti_get_bank(exti_line);
 	uint32_t mask = BIT(exti_line % _EXTI_LINES_PER_BANK);
 	uint32_t exceptions = 0;
-	unsigned int i = 0;
-
-	i = stm32_exti_get_bank(exti_line);
 
 	exceptions = cpu_spin_lock_xsave(&exti->lock);
 
@@ -272,11 +258,9 @@ static void stm32_exti_clear(struct stm32_exti_pdata *exti, uint32_t exti_line)
 static void stm32_exti_set_tz(struct stm32_exti_pdata *exti,
 			      uint32_t exti_line)
 {
+	unsigned int i = stm32_exti_get_bank(exti_line);
 	uint32_t mask = BIT(exti_line % _EXTI_LINES_PER_BANK);
 	uint32_t exceptions = 0;
-	unsigned int i = 0;
-
-	i = stm32_exti_get_bank(exti_line);
 
 	exceptions = cpu_spin_lock_xsave(&exti->lock);
 
@@ -412,10 +396,8 @@ DECLARE_KEEP_PAGER(stm32_exti_ops);
 static TEE_Result stm32_exti_rif_check_access(struct stm32_exti_pdata *exti,
 					      uint32_t exti_line)
 {
+	unsigned int i = stm32_exti_get_bank(exti_line);
 	uint32_t mask = BIT(exti_line % _EXTI_LINES_PER_BANK);
-	unsigned int i = 0;
-
-	i = stm32_exti_get_bank(exti_line);
 
 	/* only configured as secure and privileged */
 	if (!((exti->seccfgr_cache[i] & exti->privcfgr_cache[i] &
