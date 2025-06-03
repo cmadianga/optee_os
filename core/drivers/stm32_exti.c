@@ -665,6 +665,7 @@ stm32_exti_pm(enum pm_op op, unsigned int pm_hint,
 
 	return TEE_SUCCESS;
 }
+DECLARE_KEEP_PAGER(stm32_exti_pm);
 
 static enum itr_return stm32_exti_it_handler(struct itr_handler *h)
 {
@@ -680,6 +681,7 @@ static enum itr_return stm32_exti_it_handler(struct itr_handler *h)
 
 	return ITRR_HANDLED;
 }
+DECLARE_KEEP_PAGER(stm32_exti_it_handler);
 
 /* Callback for "interrupts" and "interrupts-extended" DT node properties */
 static TEE_Result
