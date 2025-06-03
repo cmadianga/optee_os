@@ -60,7 +60,7 @@
 
 /*
  * struct stm32_exti_itr_hierarchy - EXTI line interrupt hierarchy
- * @this: An EXIT interrupt number and its EXTI interrupt controller
+ * @this: An EXTI interrupt number and its EXTI interrupt controller
  * @parent: The interrupt (number and controller) that drives the interrupt
  */
 struct stm32_exti_itr_hierarchy {
