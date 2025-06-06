@@ -249,8 +249,8 @@ static void stm32_exti_clear(struct stm32_exti_pdata *exti, uint32_t exti_line)
 
 	exceptions = cpu_spin_lock_xsave(&exti->lock);
 
-	io_mask32(exti->base + _EXTI_RPR(i), mask, mask);
-	io_mask32(exti->base + _EXTI_FPR(i), mask, mask);
+	io_setbits32(exti->base + _EXTI_RPR(i), mask);
+	io_setbits32(exti->base + _EXTI_FPR(i), mask);
 
 	cpu_spin_unlock_xrestore(&exti->lock, exceptions);
 }
@@ -264,7 +264,7 @@ static void stm32_exti_set_tz(struct stm32_exti_pdata *exti,
 
 	exceptions = cpu_spin_lock_xsave(&exti->lock);
 
-	io_mask32(exti->base + _EXTI_SECCFGR(i), mask, mask);
+	io_setbits32(exti->base + _EXTI_SECCFGR(i), mask);
 
 	cpu_spin_unlock_xrestore(&exti->lock, exceptions);
 }
@@ -406,7 +406,7 @@ static TEE_Result stm32_exti_rif_check_access(struct stm32_exti_pdata *exti,
 
 	if ((exti->e_cids[exti_line] & _EXTI_CIDCFGR_CFEN) &&
 	    ((exti->e_cids[exti_line] & _EXTI_CIDCFGR_SCID_MASK) !=
-	     (_EXTI_CID1 << _EXTI_CIDCFGR_SCID_SHIFT)))
+	     SHIFT_U32(_EXTI_CID1, _EXTI_CIDCFGR_SCID_SHIFT)))
 		return TEE_ERROR_ACCESS_DENIED;
 
 	return TEE_SUCCESS;
@@ -463,7 +463,7 @@ static void stm32_exti_rif_parse_dt(struct stm32_exti_pdata *exti,
 		if (c_cid > stm32_exti_maxcid(exti))
 			panic("CID out of range");
 
-		exti->c_cids[pos - 1] = (c_cid << _CIDCFGR_SCID_SHIFT) |
+		exti->c_cids[pos - 1] = SHIFT_U32(c_cid, _CIDCFGR_SCID_SHIFT) |
 					_EXTI_CIDCFGR_CFEN;
 	}
 }
@@ -789,7 +789,7 @@ static TEE_Result stm32_exti_probe(const void *fdt, int node,
 	}
 
 	res = interrupt_register_provider(fdt, node, stm32_exti_dt_get_chip_cb,
-					  (void *)exti);
+					  exti);
 	if (res)
 		goto err;
 
@@ -807,7 +807,6 @@ err:
 
 static const struct dt_device_match stm32_exti_match_table[] = {
 	{ .compatible = "st,stm32mp1-exti" },
-	{ .compatible = "st,stm32mp13-exti" },
 	{ }
 };
 
