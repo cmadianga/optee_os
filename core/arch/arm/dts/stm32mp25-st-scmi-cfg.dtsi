@@ -854,6 +854,13 @@
 						clocks = <&rcc CK_IPCC2_AM>;
 						flags = <SCMI_CLOCK_DEFAULT_ENABLED>;
 					};
+
+					clock@84 {
+						reg = <CK_SCMI_ICN_PCIE>;
+						domain-name = "ck_icn_p_pcie";
+						clocks = <&rcc CK_BUS_PCIE>;
+						flags = <SCMI_CLOCK_DEFAULT_ENABLED>;
+					};
 				};
 			};
 
