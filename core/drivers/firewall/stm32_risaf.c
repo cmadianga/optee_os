@@ -599,13 +599,13 @@ risaf_configure_subregion(struct stm32_risaf_instance *risaf,
 			(start_addr - risaf->pdata.mem_base) & mask);
 	io_clrsetbits32(base + _RISAF_SUBREG_ENDR(reg_id, subreg_id), mask,
 			(end_addr - risaf->pdata.mem_base) & mask);
-	io_clrsetbits32(base + _RISAF_SUBREG_NESTR(reg_id, subreg_id),
-			_RISAF_SUBREG_NESTR_ALL_MASK,
-			nest_cfg & _RISAF_SUBREG_NESTR_ALL_MASK);
-
 	io_clrsetbits32(base + _RISAF_SUBREG_CFGR(reg_id, subreg_id),
 			_RISAF_SUBREG_CFGR_ALL_MASK,
 			cfg & _RISAF_SUBREG_CFGR_ALL_MASK);
+
+	io_clrsetbits32(base + _RISAF_SUBREG_NESTR(reg_id, subreg_id),
+			_RISAF_SUBREG_NESTR_ALL_MASK,
+			nest_cfg & _RISAF_SUBREG_NESTR_ALL_MASK);
 
 	DMSG("RISAF %#"PRIxPA": region %02"PRIu32" - subregion %02"PRIu32
 	     "- start %#"PRIxPA" - end %#"PRIxPA" - cfg %#08"PRIx32
