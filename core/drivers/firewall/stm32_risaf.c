@@ -326,7 +326,7 @@ static uint32_t stm32_risaf_get_subregion_config(uint32_t cfg)
 			 _RISAF_SUBREG_CFGR_SEC_SHIFT) |
 	       SHIFT_U32((cfg & DT_RISAF_SUB_PRIV_MASK) >>
 			 (DT_RISAF_SUB_PRIV_SHIFT),
-			 _RISAF_SUBREG_CFGR_SEC_SHIFT) |
+			 _RISAF_SUBREG_CFGR_PRIV_SHIFT) |
 	       SHIFT_U32((cfg & DT_RISAF_SUB_RDEN_MASK) >>
 			 (DT_RISAF_SUB_RDEN_SHIFT),
 			 _RISAF_SUBREG_CFGR_RDEN_SHIFT) |
