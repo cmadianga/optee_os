@@ -519,6 +519,17 @@
 				status = "disabled";
 			};
 
+			i2c8: i2c@46040000 {
+				compatible = "st,stm32mp25-i2c";
+				reg = <0x46040000 0x400>;
+				clocks = <&rcc CK_KER_I2C8>;
+				resets = <&rcc I2C8_R>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				access-controllers = <&rifsc STM32MP25_RIFSC_I2C8_ID>;
+				status = "disabled";
+			};
+
 			lptimer3: timer@46050000 {
 				compatible = "st,stm32mp25-lptimer";
 				reg = <0x46050000 0x400>;
