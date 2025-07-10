@@ -328,7 +328,6 @@
 				resets = <&rcc I2C1_R>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				i2c-analog-filter;
 				access-controllers = <&rifsc STM32MP25_RIFSC_I2C1_ID>;
 				status = "disabled";
 			};
@@ -340,7 +339,6 @@
 				resets = <&rcc I2C2_R>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				i2c-analog-filter;
 				access-controllers = <&rifsc STM32MP25_RIFSC_I2C2_ID>;
 				status = "disabled";
 			};
@@ -352,7 +350,6 @@
 				resets = <&rcc I2C7_R>;
 				#address-cells = <1>;
 				#size-cells = <0>;
-				i2c-analog-filter;
 				access-controllers = <&rifsc STM32MP25_RIFSC_I2C7_ID>;
 				status = "disabled";
 			};
