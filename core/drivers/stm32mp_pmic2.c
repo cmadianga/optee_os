@@ -90,10 +90,6 @@ static const struct regu_dt_property prop_table[] = {
 		.prop = STPMIC2_MASK_RESET,
 	},
 	{
-		.name = "st,regulator-bypass",
-		.prop = STPMIC2_BYPASS,
-	},
-	{
 		.name = "st,pwrctrl-enable",
 		.prop = STPMIC2_PWRCTRL_EN,
 	},
