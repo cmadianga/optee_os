@@ -78,12 +78,10 @@ static struct mutex cpu_opp_mu = MUTEX_INITIALIZER;
 
 #define MPU_RAM_LOW_SPEED_THRESHOLD 1320000
 
-#ifndef CFG_SCPFW_MOD_DVFS
 size_t stm32_cpu_opp_count(void)
 {
 	return cpu_opp.opp_count;
 }
-#endif
 
 unsigned int stm32_cpu_opp_level(size_t opp_index)
 {
@@ -365,6 +363,30 @@ static const struct regulator_ops stm32_scp_cpu_opp_regu = {
 	.supported_voltages = scp_regu_voltages,
 };
 
+/* Request to switch to CPU operating point related to @rate */
+TEE_Result stm32_cpu_opp_set_rate(unsigned int rate __unused)
+{
+	return TEE_ERROR_NOT_SUPPORTED;
+}
+
+/* Get rate related to current CPU operating point */
+unsigned int stm32_cpu_opp_get_rate(void)
+{
+	return clk_get_rate(cpu_opp.clock);
+}
+
+/* Request to CPU operating point related to @level */
+TEE_Result stm32_cpu_opp_get_rate_for_level(unsigned int level,
+					    unsigned int *rate)
+{
+	if (level >= cpu_opp.opp_count)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	*rate = cpu_opp.dvfs[level].freq_khz * 1000UL;
+
+	return TEE_SUCCESS;
+}
+
 static int cmp_cpu_opp_by_freq(const void *a, const void *b)
 {
 	const struct cpu_dvfs *opp_a = a;
@@ -517,6 +539,7 @@ TEE_Result optee_scmi_server_init_dvfs(const void *fdt __unused,
 		.dvfs_opp_mv = dvfs_opp_mv,
 		.clk = &cpu_opp.scp_clock,
 		.regulator = &cpu_opp.scp_regulator,
+		.opp_id = OPP_ID_CPU,
 	};
 
 	free(dvfs_khz);
