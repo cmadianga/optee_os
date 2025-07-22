@@ -198,8 +198,10 @@ struct stm32_clk_platdata {
 	uint32_t *kernelclk;
 	uint32_t nflexgen;
 	uint32_t *flexgen;
+#ifndef CFG_STM32_CM33TDCID
 	uint32_t c1msrd;
 	bool safe_rst;
+#endif
 	struct rif_conf_data conf_data;
 	unsigned int nb_res;
 };
@@ -1260,11 +1262,13 @@ static int stm32_clk_parse_fdt(const void *fdt, int node,
 	if (err != 0)
 		return err;
 
+#ifndef CFG_STM32_CM33TDCID
 	pdata->c1msrd = fdt_read_uint32_default(fdt, node, "st,c1msrd",
 						UINT32_MAX);
 
 	pdata->safe_rst = fdt_getprop(fdt, node, "st,safe_rst",
 				      NULL) ? true : false;
+#endif
 
 	pdata->rcc_base = stm32_rcc_base();
 
@@ -1496,11 +1500,14 @@ static void clk_stm32_debug_display_opp_dt_cfg(struct clk_stm32_priv *priv)
 	clk_stm32_debug_display_opp_cfg("st,ck_cpu1", opp->cpu1_opp);
 }
 
-static void clk_stm32_debug_display_others_dt_cfg(struct clk_stm32_priv *priv)
+static void clk_stm32_debug_display_others_dt_cfg(struct clk_stm32_priv *priv
+						  __maybe_unused)
 {
+#ifndef CFG_STM32_CM33TDCID
 	struct stm32_clk_platdata *pdata = priv->pdata;
 
 	printf("c1msrd = %"PRIu32"\n", pdata->c1msrd);
+#endif
 }
 
 static void clk_stm32_debug_display_pdata(void)
@@ -4231,10 +4238,13 @@ static void clk_stm32_init_oscillators(const void *fdt, int node)
 	ck_msi_ker.parents[0] = ck_msi.parents[0];
 }
 
-static TEE_Result clk_stm32_apply_rcc_config(struct stm32_clk_platdata *pdata)
+static TEE_Result clk_stm32_apply_rcc_config(struct stm32_clk_platdata *pdata
+					     __maybe_unused)
 {
+#ifndef CFG_STM32_CM33TDCID
 	if (pdata->safe_rst)
 		stm32mp25_syscfg_set_safe_reset(true);
+#endif
 
 	return TEE_SUCCESS;
 }
@@ -4726,17 +4736,21 @@ static TEE_Result stm32_rcc_pm_resume(void)
 
 static TEE_Result stm32_rcc_pm_suspend(void)
 {
-	struct stm32_clk_platdata *pdata = &stm32mp21_clock_pdata;
+	__maybe_unused struct stm32_clk_platdata *pdata = NULL;
 	TEE_Result res = TEE_ERROR_GENERIC;
 
 	res = clk_save_context();
 	if (res != TEE_SUCCESS)
 		return res;
 
+#ifndef CFG_STM32_CM33TDCID
+	pdata = &stm32mp21_clock_pdata;
+
 	/* Set c1msrd for bootrom use. It's reset by HW during standby */
 	if (pdata->c1msrd != UINT32_MAX)
 		io_write32(pdata->rcc_base + RCC_C1MSRDCR, pdata->c1msrd &
 			   RCC_C1MSRDCR_C1MSRD_MASK);
+#endif
 
 	return TEE_SUCCESS;
 }
