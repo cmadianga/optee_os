@@ -35,5 +35,4 @@ $(call force,CFG_SCPFW_NOTIFICATION,n)
 $(call force,CFG_SCPFW_FAST_CHANNEL,n)
 
 # Default configuration values for product specific modules
-CFG_SCPFW_MOD_PSU_OPTEE_REGULATOR ?= n
 CFG_SCPFW_MOD_STM32_PD ?= n
