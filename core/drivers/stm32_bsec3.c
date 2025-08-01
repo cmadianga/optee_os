@@ -99,7 +99,7 @@ static_assert(!(IS_ENABLED(CFG_STM32_CM33TDCID) &&
 #endif
 
 #if defined(CFG_STM32MP21)
-#define BSEC_DENR_ALL_MASK		GENMASK_32(17, 1)
+#define BSEC_DENR_ALL_MASK		GENMASK_32(17, 0)
 #define BSEC_DENR_WRITE_CONF		U(0xDEB00000)
 #endif /* CFG_STM32MP21 */
 
