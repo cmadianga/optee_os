@@ -112,7 +112,7 @@ static_assert(!(IS_ENABLED(CFG_STM32_CM33TDCID) &&
 				 ((PARITY_12BIT((x) & 0x78e)) << 15) | \
 				 ((PARITY_12BIT((x) & 0x66d)) << 14) | \
 				 ((PARITY_12BIT((x) & 0xd5b)) << 13) | \
-				 ((PARITY_12BIT((x) ^ 0xcb7)) << 12))
+				 ((PARITY_12BIT((x) & 0xcb7)) << 12))
 #define BSEC_DENR_v(x)		(BSEC_DENR_WRITE_CONF | BSEC_DENR_ECC(x) | \
 				 ((x) & 0xfff))
 
