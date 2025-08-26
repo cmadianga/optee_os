@@ -200,7 +200,6 @@ struct stm32_clk_platdata {
 	uint32_t *flexgen;
 #ifndef CFG_STM32_CM33TDCID
 	uint32_t c1msrd;
-	bool safe_rst;
 #endif
 	struct rif_conf_data conf_data;
 	unsigned int nb_res;
@@ -1265,9 +1264,6 @@ static int stm32_clk_parse_fdt(const void *fdt, int node,
 #ifndef CFG_STM32_CM33TDCID
 	pdata->c1msrd = fdt_read_uint32_default(fdt, node, "st,c1msrd",
 						UINT32_MAX);
-
-	pdata->safe_rst = fdt_getprop(fdt, node, "st,safe_rst",
-				      NULL) ? true : false;
 #endif
 
 	pdata->rcc_base = stm32_rcc_base();
@@ -4238,17 +4234,6 @@ static void clk_stm32_init_oscillators(const void *fdt, int node)
 	ck_msi_ker.parents[0] = ck_msi.parents[0];
 }
 
-static TEE_Result clk_stm32_apply_rcc_config(struct stm32_clk_platdata *pdata
-					     __maybe_unused)
-{
-#ifndef CFG_STM32_CM33TDCID
-	if (pdata->safe_rst)
-		stm32mp25_syscfg_set_safe_reset(true);
-#endif
-
-	return TEE_SUCCESS;
-}
-
 static unsigned long clk_stm32_clock_frequency_calculator_get_ref(void)
 {
 	uint32_t val = 0;
@@ -4819,9 +4804,8 @@ static TEE_Result stm32mp2_clk_probe(const void *fdt, int node,
 
 	clk_stm32_init_oscillators(fdt, node);
 
-	res = clk_stm32_apply_rcc_config(pdata);
-	if (res)
-		panic("Error when applying RCC config");
+	if (!IS_ENABLED(CFG_STM32_CM33TDCID))
+		stm32mp25_syscfg_set_safe_reset(true);
 
 	stm32mp_clk_provider_probe_final(fdt, node, priv);
 
