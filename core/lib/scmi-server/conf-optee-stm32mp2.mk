@@ -15,6 +15,7 @@ $(call force,CFG_SCPFW_MOD_SCMI_CLOCK,y)
 $(call force,CFG_SCPFW_MOD_SCMI_PERF,y)
 $(call force,CFG_SCPFW_MOD_SCMI_RESET_DOMAIN,y)
 $(call force,CFG_SCPFW_MOD_SCMI_VOLTAGE_DOMAIN,y)
+$(call force,CFG_SCPFW_MOD_STM32_OPP,y)
 
 ifeq ($(call cfg-one-enabled, CFG_STM32MP23 CFG_STM32MP25),y)
 $(call force,CFG_SCPFW_MOD_POWER_DOMAIN,y)
