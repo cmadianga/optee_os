@@ -287,7 +287,7 @@ enum {
 #define FS_OCP_LDO8		BIT(7)
 
 /* NVM_BUCK1_VOUT_SHR */
-#define BUCK1_VRAN_GE_CFG	BIT(7)
+#define BUCK1_VRANGE_CFG	BIT(7)
 
 enum stpmic2_prop_id {
 	STPMIC2_MASK_RESET = 0,
