@@ -5123,15 +5123,19 @@ static TEE_Result stm32_rcc_pm_resume(void)
 static TEE_Result stm32_rcc_pm_suspend(void)
 {
 	__maybe_unused struct stm32_clk_platdata *pdata = NULL;
+	TEE_Result res = TEE_ERROR_GENERIC;
 
-	clk_save_context();
+	res = clk_save_context();
+	if (res != TEE_SUCCESS)
+		return res;
 
 #ifndef CFG_STM32_CM33TDCID
 	pdata = &stm32mp25_clock_pdata;
 
 	/* Set c1msrd for bootrom use. It's reset by HW during standby */
-	io_write32(pdata->rcc_base + RCC_C1MSRDCR, pdata->c1msrd &
-		   RCC_C1MSRDCR_C1MSRD_MASK);
+	if (pdata->c1msrd != UINT32_MAX)
+		io_write32(pdata->rcc_base + RCC_C1MSRDCR, pdata->c1msrd &
+			   RCC_C1MSRDCR_C1MSRD_MASK);
 #endif
 
 	return TEE_SUCCESS;
