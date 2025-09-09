@@ -476,35 +476,21 @@ static int cmp_cpu_opp_by_freq(const void *a, const void *b)
 	return CMP_TRILEAN(opp_a->freq_khz, opp_b->freq_khz);
 }
 
-TEE_Result optee_scmi_server_init_dvfs(const void *fdt __unused,
-				       int node __unused,
-				       struct scpfw_agent_config *agent_cfg,
-				       struct scpfw_channel_config *channel_cfg)
+TEE_Result optee_scmi_server_cpu_dvfs(int perf_id,
+				      struct scpfw_channel_config *channel_cfg)
 {
 	unsigned int *dvfs_khz = NULL;
 	unsigned int *dvfs_mv = NULL;
 	size_t opp = 0;
 	struct cpu_dvfs *sorted_dvfs = NULL;
 
-	assert(agent_cfg && channel_cfg);
+	assert(channel_cfg && cpu_opp.opp_count);
 
-	/*
-	 * Platform currenty expect only non-secure Cortex-A
-	 * (aka agent 1/channel 0) exposes a CPU DFVS service.
-	 */
-	if (agent_cfg->agent_id != 1 || channel_cfg->channel_id != 0)
-		return TEE_SUCCESS;
-
-	/* MOD STM32 OPP expose a clock for scp-firmare DVFS module */
-	channel_cfg->perfd_count = 1;
-	channel_cfg->perfd = calloc(channel_cfg->perfd_count,
-				    sizeof(*channel_cfg->perfd));
 	sorted_dvfs = calloc(cpu_opp.opp_count, sizeof(*sorted_dvfs));
 	dvfs_khz = calloc(cpu_opp.opp_count, sizeof(*dvfs_khz));
 	dvfs_mv = calloc(cpu_opp.opp_count, sizeof(*dvfs_mv));
-	if (!sorted_dvfs || !dvfs_khz || !dvfs_mv || !channel_cfg->perfd) {
+	if (!sorted_dvfs || !dvfs_khz || !dvfs_mv) {
 		free(sorted_dvfs);
-		free(channel_cfg->perfd);
 		free(dvfs_mv);
 		free(dvfs_khz);
 
@@ -529,7 +515,7 @@ TEE_Result optee_scmi_server_init_dvfs(const void *fdt __unused,
 
 	free(sorted_dvfs);
 
-	channel_cfg->perfd[0] = (struct scmi_perfd){
+	channel_cfg->perfd[perf_id] = (struct scmi_perfd){
 		.name = "CPU DVFS",
 		.initial_opp = cpu_opp.default_opp,
 		.dvfs_opp_count = cpu_opp.opp_count,

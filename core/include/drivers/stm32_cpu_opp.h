@@ -23,19 +23,12 @@ bool opp_voltage_is_supported(struct regulator *regul, uint32_t *volt_uv);
 unsigned int stm32_cpu_opp_level(size_t opp_index);
 
 #ifdef CFG_SCPFW_MOD_DVFS
-/* Provide CPU clock and regulator reference for CPU DVFS with SCMI */
-void scmi_server_set_cpu_resources(struct regulator *regulator, struct clk *clk,
-				   unsigned int *dvfs_khz,
-				   unsigned int *dvfs_mv, size_t dvfs_count);
-
 /*
- * Initialize SCMI DVFS from DT.
+ * Initialize SCMI performance protocol with DVFS information
  * Returns a TEE_Result compliant value
  */
-TEE_Result optee_scmi_server_init_dvfs(const void *fdt, int node,
-				       struct scpfw_agent_config *agent_cfg,
-				       struct scpfw_channel_config *channel_cfg
-				       );
+TEE_Result optee_scmi_server_cpu_dvfs(int perf_id,
+				      struct scpfw_channel_config *channel_cfg);
 
 /* Request to switch to CPU operating point related to @rate */
 TEE_Result stm32_cpu_opp_set_rate(unsigned int rate);
