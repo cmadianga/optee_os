@@ -357,6 +357,8 @@ static TEE_Result optee_scmi_server_init_perf(struct scpfw_channel_config *cfg)
 	cfg->perfd_count = 0U;
 	if (stm32_opp_get_count(OPP_ID_CPU) > 0U)
 		cfg->perfd_count++;
+	if (stm32_opp_get_count(OPP_ID_GPU) > 0U)
+		cfg->perfd_count++;
 	if (!cfg->perfd_count)
 		return TEE_SUCCESS;
 
@@ -368,6 +370,14 @@ static TEE_Result optee_scmi_server_init_perf(struct scpfw_channel_config *cfg)
 		res = optee_scmi_server_cpu_dvfs(i++, cfg);
 		if (res) {
 			EMSG("Error during DFVS init %d", OPP_ID_CPU);
+			return res;
+		}
+	}
+
+	if (stm32_opp_get_count(OPP_ID_GPU) > 0U) {
+		res = optee_scmi_server_gpu_dvfs(i++, cfg);
+		if (res) {
+			EMSG("Error during DFVS init %d", OPP_ID_GPU);
 			return res;
 		}
 	}
