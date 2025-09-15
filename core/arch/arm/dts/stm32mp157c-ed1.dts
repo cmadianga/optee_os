@@ -88,6 +88,7 @@
 		gpios = <&gpiof 14 (GPIO_ACTIVE_HIGH | GPIO_STM32_NSEC)>;
 		states = <1800000 0x1>,
 			 <2900000 0x0>;
+		gpios-states = <0>;
 	};
 
 	vin: vin {
