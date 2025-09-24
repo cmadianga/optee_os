@@ -24,7 +24,13 @@
 #define BSEC_NIDENM			BIT(9)
 #define BSEC_SPIDENM			BIT(10)
 #define BSEC_SPNIDENM			BIT(11)
+
+#define PERIPHERAL_DBG_PROFILE		(BSEC_DBGENA | BSEC_DEVICEEN |\
+					 BSEC_DBGSWEN)
 #else /* STM32MP1x */
+#define BSEC_DBGEN			BIT(1)
+#define BSEC_NIDEN			BIT(2)
+#define BSEC_DEVICEEN			BIT(3)
 #define BSEC_HDPEN			BIT(4)
 #define BSEC_SPIDEN			BIT(5)
 #define BSEC_SPINDEN			BIT(6)
@@ -33,7 +39,12 @@
 					 BSEC_SPIDEN | \
 					 BSEC_SPINDEN | \
 					 BSEC_DBGSWGEN)
+
+#define PERIPHERAL_DBG_PROFILE		(BSEC_DBGEN | BSEC_DEVICEEN | \
+					 BSEC_DBGSWGEN)
+
 #endif
+
 #if defined(CFG_STM32MP21)
 #define BSEC_AUTH_UNLOCK_MSK		GENMASK_32(15, 8)
 #define BSEC_AUTH_UNLOCK(val)		(((val) << 8) & BSEC_AUTH_UNLOCK_MSK)
