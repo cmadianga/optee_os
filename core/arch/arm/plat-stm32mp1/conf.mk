@@ -403,6 +403,11 @@ ifeq ($(CFG_STM32_BSEC_PTA),y)
 $(call force,CFG_STM32_BSEC,y,Required by CFG_STM32_BSEC_PTA)
 endif
 
+CFG_STM32_DEBUG_ACCESS_PTA ?= y
+ifeq ($(CFG_STM32_DEBUG_ACCESS_PTA),y)
+$(call force,CFG_STM32_BSEC,y,Mandated by CFG_STM32_DEBUG_ACCESS_PTA)
+endif
+
 $(call force,CFG_SCMI_PTA,y)
 $(call force,CFG_SCMI_MSG_DRIVERS,y)
 $(call force,CFG_SCMI_SCPFW,n,SCPFW for STM32MP1 no is not supported)
