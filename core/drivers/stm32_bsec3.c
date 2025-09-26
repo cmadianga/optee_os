@@ -284,7 +284,7 @@ static TEE_Result shadow_otp(unsigned int otp)
 		bsec_dev.mirror->otp[otp].status |= PTA_BSEC_LOCK_ERROR;
 		bsec_dev.mirror->otp[otp].value = 0x0U;
 
-		return TEE_ERROR_GENERIC;
+		return TEE_ERROR_ACCESS_DENIED;
 	}
 
 	bsec_dev.mirror->otp[otp].status &= ~PTA_BSEC_LOCK_ERROR;
@@ -307,7 +307,7 @@ static TEE_Result shadow_otp(unsigned int otp)
 					   BSEC_OTPSR_DISTURBF |
 					   BSEC_OTPSR_DEDF)) {
 		bsec_dev.mirror->otp[otp].status |= PTA_BSEC_LOCK_ERROR;
-		return TEE_ERROR_GENERIC;
+		return TEE_ERROR_CORRUPT_OBJECT;
 	}
 
 	return TEE_SUCCESS;
@@ -537,6 +537,7 @@ static TEE_Result check_program_error(uint32_t otp __maybe_unused,
 TEE_Result stm32_bsec_program_otp(uint32_t val, uint32_t otp)
 {
 	TEE_Result result = TEE_ERROR_GENERIC;
+	TEE_Result shadow_res = TEE_SUCCESS;
 	unsigned int i = 0U;
 	bool value = false;
 	uint32_t exceptions = 0U;
@@ -601,19 +602,23 @@ TEE_Result stm32_bsec_program_otp(uint32_t val, uint32_t otp)
 				fvr = val;
 			}
 		} else {
-			shadow_otp(otp); /* reload the fuse word */
-			fvr = io_read32(bsec_base() + BSEC_FVR(otp));
+			shadow_res = shadow_otp(otp); /* reload the fuse word */
+			if (!shadow_res)
+				fvr = io_read32(bsec_base() + BSEC_FVR(otp));
 		}
-		if (fvr != val)
-			EMSG("BSEC shadow %"PRIu32" invalid: %08x, write= %08x",
-			     otp, fvr, val);
 
-		/* update the mirror memory if allowed */
+		if (shadow_res || fvr != val)
+			EMSG("BSEC shadow %"PRIu32" invalid: %08x, write= %08x, reload err %"PRIx32,
+			     otp, fvr, val, shadow_res);
+
 		if (!(bsec_dev.mirror->otp[otp].status &
 		      PTA_BSEC_STATUS_SECURE)) {
+			/* update the mirror memory if allowed */
 			bsec_dev.mirror->otp[otp].value = fvr;
-			bsec_dev.mirror->otp[otp].status &=
-				~PTA_BSEC_LOCK_ERROR;
+			if (!shadow_res && fvr == val) {
+				bsec_dev.mirror->otp[otp].status &=
+					~PTA_BSEC_LOCK_ERROR;
+			}
 		}
 	}
 
