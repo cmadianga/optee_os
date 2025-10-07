@@ -770,7 +770,7 @@ DECLARE_KEEP_PAGER_PM(mp15_data);
 
 static const struct stm32_rng_driver_data mp21_data[] = {
 	{
-		.max_noise_clk_freq = U(48000000),
+		.max_noise_clk_freq = U(8000000),
 		.nb_clock = 2,
 		.has_cond_reset = true,
 		.has_power_optim = true,
