@@ -7,7 +7,6 @@
 #include <config.h>
 #include <drivers/clk.h>
 #include <drivers/clk_dt.h>
-#include <drivers/stm32_bsec.h>
 #include <drivers/stm32_rif.h>
 #include <drivers/stm32mp25_rcc.h>
 #include <dt-bindings/clock/stm32mp25-clks.h>
@@ -3402,25 +3401,6 @@ static const struct clk_ops clk_stm32_rif_gate_ops = {
 	.restore_context = clk_stm32_rif_gate_pm_restore,
 };
 
-static TEE_Result clk_stm32_rif_gate_dbg_enable(struct clk *clk __maybe_unused)
-{
-#ifdef CFG_STM32_BSEC3
-	if (!stm32_bsec_self_hosted_debug_is_enabled())
-		return TEE_ERROR_ACCESS_DENIED;
-
-	return clk_stm32_rif_gate_enable(clk);
-#else
-	return TEE_SUCCESS;
-#endif
-}
-
-static const struct clk_ops  clk_stm32_rif_gate_dbg_ops = {
-	.enable		= clk_stm32_rif_gate_dbg_enable,
-	.disable	= clk_stm32_rif_gate_disable,
-	.is_enabled	= clk_stm32_rif_gate_is_enabled,
-	.restore_context = clk_stm32_rif_gate_pm_restore,
-};
-
 struct clk_stm32_rif_composite_cfg {
 	int sec_id;
 	int gate_id;
@@ -3681,19 +3661,6 @@ static const struct clk_ops ck_timer_ops = {
 		.parents = { (_parent) },\
 	}
 
-#define RIF_GATE_DBG(_name, _parent, _flags, _gate_id, _sec_id)\
-	struct clk _name = {\
-		.ops = &clk_stm32_rif_gate_dbg_ops,\
-		.priv = &(struct clk_stm32_rif_gate_cfg) {\
-			.sec_id	= (_sec_id),\
-			.gate_id = (_gate_id),\
-		},\
-		.name = #_name,\
-		.flags = (_flags),\
-		.num_parents = 1,\
-		.parents = { (_parent) },\
-	}
-
 #define RIF_COMPOSITE(_name, _nb_parents, _parents, _flags,\
 			_gate_id, _div_id, _mux_id, _sec_id)\
 	struct clk _name = {\
@@ -3865,21 +3832,15 @@ static STM32_TIMER(ck_timg1, &ck_icn_apb1, 0, RCC_APB1DIVR, RCC_TIMG1PRER);
 static STM32_TIMER(ck_timg2, &ck_icn_apb2, 0, RCC_APB2DIVR, RCC_TIMG2PRER);
 
 /* Clocks under RCC RIF protection */
-static RIF_GATE_DBG(ck_sys_dbg, &ck_icn_apbdbg, 0, GATE_DBG,
-		    RCC_RIF_DEBUG_TRACE);
-static RIF_GATE_DBG(ck_icn_p_stm, &ck_icn_apbdbg, 0, GATE_STM,
-		    RCC_RIF_DEBUG_TRACE);
-static RIF_GATE_DBG(ck_icn_s_stm, &ck_icn_ls_mcu, 0, GATE_STM,
-		    RCC_RIF_DEBUG_TRACE);
+static RIF_GATE(ck_sys_dbg, &ck_icn_apbdbg, 0, GATE_DBG, RCC_RIF_DEBUG_TRACE);
+static RIF_GATE(ck_icn_p_stm, &ck_icn_apbdbg, 0, GATE_STM, RCC_RIF_DEBUG_TRACE);
+static RIF_GATE(ck_icn_s_stm, &ck_icn_ls_mcu, 0, GATE_STM, RCC_RIF_DEBUG_TRACE);
 static RIF_GATE(ck_ker_tsdbg, &ck_flexgen_43, 0, GATE_DBG, RCC_RIF_DEBUG_TRACE);
 static RIF_GATE(ck_ker_tpiu, &ck_flexgen_44, 0, GATE_TRACE,
 		RCC_RIF_DEBUG_TRACE);
-static RIF_GATE_DBG(ck_icn_p_etr, &ck_icn_apbdbg, 0, GATE_ETR,
-		    RCC_RIF_DEBUG_TRACE);
-static RIF_GATE_DBG(ck_icn_m_etr, &ck_flexgen_45, 0, GATE_ETR,
-		    RCC_RIF_DEBUG_TRACE);
-static RIF_GATE_DBG(ck_sys_atb, &ck_flexgen_45, 0, GATE_DBG,
-		    RCC_RIF_DEBUG_TRACE);
+static RIF_GATE(ck_icn_p_etr, &ck_icn_apbdbg, 0, GATE_ETR, RCC_RIF_DEBUG_TRACE);
+static RIF_GATE(ck_icn_m_etr, &ck_flexgen_45, 0, GATE_ETR, RCC_RIF_DEBUG_TRACE);
+static RIF_GATE(ck_sys_atb, &ck_flexgen_45, 0, GATE_DBG, RCC_RIF_DEBUG_TRACE);
 
 static RIF_GATE(ck_icn_s_sysram, &ck_icn_hs_mcu, 0, GATE_SYSRAM,
 		RCC_RIF_SYSRAM);
