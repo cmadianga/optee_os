@@ -155,7 +155,7 @@ TEE_Result stm32mp1_dbgmcu_get_chip_version(uint32_t *chip_version)
 	if (!chip_version)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	if (stm32_bsec_read_debug_conf() & BSEC_DBGSWGEN)
+	if (stm32_bsec_self_hosted_debug_is_enabled())
 		id = (io_read32(stm32_dbgmcu_base() + DBGMCU_IDC) &
 		      DBGMCU_IDC_REV_ID_MASK) >> DBGMCU_IDC_REV_ID_SHIFT;
 
@@ -172,7 +172,7 @@ TEE_Result stm32mp1_dbgmcu_get_chip_dev_id(uint32_t *chip_dev_id)
 	if (!chip_dev_id)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	if (stm32_bsec_read_debug_conf() & BSEC_DBGSWGEN)
+	if (stm32_bsec_self_hosted_debug_is_enabled())
 		id = io_read32(stm32_dbgmcu_base() + DBGMCU_IDC) &
 		     DBGMCU_IDC_DEV_ID_MASK;
 
