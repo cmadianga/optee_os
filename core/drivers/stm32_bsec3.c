@@ -628,49 +628,6 @@ TEE_Result stm32_bsec_program_otp(uint32_t val, uint32_t otp)
 }
 #endif
 
-TEE_Result stm32_bsec_write_debug_conf(uint32_t val)
-{
-	TEE_Result result = TEE_ERROR_GENERIC;
-	uint32_t exceptions = 0U;
-
-	if (IS_ENABLED(CFG_STM32_CM33TDCID))
-		return TEE_ERROR_ACCESS_DENIED;
-
-	if (is_bsec_write_locked())
-		return TEE_ERROR_ACCESS_DENIED;
-
-	exceptions = bsec_lock();
-
-	if (IS_ENABLED(CFG_STM32MP21))
-		val = BSEC_DENR_v(val);
-
-	io_clrsetbits32(bsec_base() + BSEC_DENR, BSEC_DENR_ALL_MASK,
-			val | BSEC_DENR_WRITE_CONF);
-
-	if (stm32_bsec_read_debug_conf() == (val & BSEC_DENR_ALL_MASK))
-		result = TEE_SUCCESS;
-
-	bsec_unlock(exceptions);
-
-	return result;
-}
-
-uint32_t stm32_bsec_read_debug_conf(void)
-{
-	if (IS_ENABLED(CFG_STM32_CM33TDCID))
-		return 0;
-
-	return io_read32(bsec_base() + BSEC_DENR) & BSEC_DENR_ALL_MASK;
-}
-
-bool stm32_bsec_self_hosted_debug_is_enabled(void)
-{
-	if (IS_ENABLED(CFG_STM32_CM33TDCID))
-		return false;
-
-	return stm32_bsec_read_debug_conf() & BSEC_DENR_DBGSWEN;
-}
-
 #if defined(CFG_STM32MP21)
 /*
  * Dummy ADAC requires setting BSEC_DBGACR and BSEC_DBGMCR.
@@ -780,6 +737,49 @@ void stm32_bsec_parse_permissions(uint32_t perm_mask,
 	/* TODO: STM32MP21_PERM_MASK_WAITATTACH */
 }
 #endif /* CFG_STM32MP21 */
+
+TEE_Result stm32_bsec_write_debug_conf(uint32_t val)
+{
+	TEE_Result result = TEE_ERROR_GENERIC;
+	uint32_t exceptions = 0U;
+
+	if (IS_ENABLED(CFG_STM32_CM33TDCID))
+		return TEE_ERROR_ACCESS_DENIED;
+
+	if (is_bsec_write_locked())
+		return TEE_ERROR_ACCESS_DENIED;
+
+	exceptions = bsec_lock();
+
+	if (IS_ENABLED(CFG_STM32MP21))
+		val = BSEC_DENR_v(val);
+
+	io_clrsetbits32(bsec_base() + BSEC_DENR, BSEC_DENR_ALL_MASK,
+			val | BSEC_DENR_WRITE_CONF);
+
+	if (stm32_bsec_read_debug_conf() == (val & BSEC_DENR_ALL_MASK))
+		result = TEE_SUCCESS;
+
+	bsec_unlock(exceptions);
+
+	return result;
+}
+
+uint32_t stm32_bsec_read_debug_conf(void)
+{
+	if (IS_ENABLED(CFG_STM32_CM33TDCID))
+		return 0;
+
+	return io_read32(bsec_base() + BSEC_DENR) & BSEC_DENR_ALL_MASK;
+}
+
+bool stm32_bsec_self_hosted_debug_is_enabled(void)
+{
+	if (IS_ENABLED(CFG_STM32_CM33TDCID))
+		return false;
+
+	return stm32_bsec_read_debug_conf() & BSEC_DENR_DBGSWEN;
+}
 
 /*
  * bsec_get_version: return BSEC version.
