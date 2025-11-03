@@ -524,6 +524,9 @@ TEE_Result optee_scmi_server_cpu_dvfs(int perf_id,
 		.opp_id = OPP_ID_CPU,
 	};
 
+	/* Assume that the dynamic part of the OPP driver is used */
+	cpu_opp.running = true;
+
 	return TEE_SUCCESS;
 }
 #endif /*CFG_SCPFW_MOD_DVFS*/
