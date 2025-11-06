@@ -460,13 +460,21 @@ $(call force,CFG_WITH_SOFTWARE_PRNG,n,Mandated by CFG_HWRNG_PTA)
 $(call force,CFG_HWRNG_QUALITY,1024)
 endif
 
-# Provision enough threads to pass xtest
-ifeq ($(CFG_SCMI_PTA),y)
+# due to memory constrains when CFG_WITH_PAGER=y provision minimum number of
+# thread to pass xtest : 2
+# Else set a higher number since we have plenty of secure memory.
 ifeq ($(CFG_WITH_PAGER),y)
-CFG_NUM_THREADS ?= 3
+CFG_NUM_THREADS ?= 2
 else
 CFG_NUM_THREADS ?= 10
 endif
+
+ifeq ($(CFG_SCMI_PTA)-$(CFG_WITH_PAGER),y-y)
+$(eval CFG_NUM_THREADS = $(shell echo $$(( $(CFG_NUM_THREADS)+1))))
+endif
+
+ifeq ($(CFG_PAGED_PSCI_CPU_SUSPEND)-$(CFG_WITH_PAGER),y-y)
+$(eval CFG_NUM_THREADS = $(shell echo $$(( $(CFG_NUM_THREADS)+1))))
 endif
 
 # Default enable some test facitilites
