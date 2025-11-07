@@ -54,41 +54,6 @@
 			      STM32_BSEC_DEBUG_CORTEX_A_HDP(0) | \
 			      STM32_BSEC_DEBUG_CORTEX_M_HDP(0))
 
-/* BSEC_DEBUG */
-#if defined(CFG_STM32MP25) || defined(CFG_STM32MP23) || defined(CFG_STM32MP21)
-#define BSEC_DBGENA			BIT(1)
-#define BSEC_NIDENA			BIT(2)
-#define BSEC_DEVICEEN			BIT(3)
-#define BSEC_HDPEN			BIT(4)
-#define BSEC_SPIDENA			BIT(5)
-#define BSEC_SPNIDENA			BIT(6)
-#define BSEC_DBGSWEN			BIT(7)
-#define BSEC_DBGENM			BIT(8)
-#define BSEC_NIDENM			BIT(9)
-#define BSEC_SPIDENM			BIT(10)
-#define BSEC_SPNIDENM			BIT(11)
-
-#define PERIPHERAL_DBG_PROFILE		(BSEC_DBGENA | BSEC_DEVICEEN |\
-					 BSEC_DBGSWEN)
-#else /* STM32MP1x */
-#define BSEC_DBGEN			BIT(1)
-#define BSEC_NIDEN			BIT(2)
-#define BSEC_DEVICEEN			BIT(3)
-#define BSEC_HDPEN			BIT(4)
-#define BSEC_SPIDEN			BIT(5)
-#define BSEC_SPINDEN			BIT(6)
-#define BSEC_DBGSWGEN			BIT(10)
-#define BSEC_DEBUG_ALL			(BSEC_HDPEN | \
-					 BSEC_SPIDEN | \
-					 BSEC_SPINDEN | \
-					 BSEC_DBGSWGEN)
-
-#define PERIPHERAL_DBG_PROFILE		(BSEC_DBGEN | BSEC_DEVICEEN | \
-					 BSEC_DBGSWGEN)
-
-#endif
-
-
 #define BSEC_BITS_PER_WORD		(8U * sizeof(uint32_t))
 #define BSEC_BYTES_PER_WORD		sizeof(uint32_t)
 
