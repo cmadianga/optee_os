@@ -182,7 +182,6 @@ void plat_bsec_get_static_cfg(struct stm32_bsec_static_cfg *cfg)
 }
 
 #ifndef CFG_STM32_CM33TDCID
-#define BSEC3_DEBUG_ALL		GENMASK_32(11, 1)
 static TEE_Result init_debug(void)
 {
 	TEE_Result res = TEE_SUCCESS;
@@ -199,7 +198,7 @@ static TEE_Result init_debug(void)
 		if (IS_ENABLED(CFG_INSECURE))
 			IMSG("WARNING: All debug access are allowed");
 
-		res = stm32_bsec_write_debug_conf(BSEC3_DEBUG_ALL);
+		res = stm32_bsec_write_debug_conf(STM32_BSEC_DEBUG_ALL);
 		if (res)
 			panic("Debug configuration failed");
 
@@ -215,7 +214,7 @@ static TEE_Result init_debug(void)
 		if (clk_enable(dbgmcu_clk))
 			panic("Could not enable DBGMCU clock");
 
-		stm32_bsec_mp21_dummy_adac();
+		stm32_bsec_mp21_ap0_unlock();
 
 		/*
 		 * Write a dummy value to trigger the full visibility

@@ -88,20 +88,6 @@
 
 #endif
 
-#if defined(CFG_STM32MP21)
-#define BSEC_AUTH_UNLOCK_MSK		GENMASK_32(15, 8)
-#define BSEC_AUTH_UNLOCK(val)		(((val) << 8) & BSEC_AUTH_UNLOCK_MSK)
-#define BSEC_AUTH_HDPL_MSK		GENMASK_32(23, 16)
-#define BSEC_AUTH_HDPL(val)		(((val) << 16) & BSEC_AUTH_HDPL_MSK)
-#define BSEC_AUTH_SEC_MSK		GENMASK_32(31, 24)
-#define BSEC_AUTH_SEC(val)		(((val) << 24) & BSEC_AUTH_SEC_MSK)
-#define BSEC_AUTH_UNLOCKED		0xb4
-#define BSEC_AUTH_LOCKED		0xff
-#define BSEC_AUTH_HDPL0			0xb4
-#define BSEC_AUTH_HDPL1			0x51
-#define BSEC_AUTH_HDPL2			0x8a
-#define BSEC_AUTH_HDPL3			0x6f
-#endif
 
 #define BSEC_BITS_PER_WORD		(8U * sizeof(uint32_t))
 #define BSEC_BYTES_PER_WORD		sizeof(uint32_t)
@@ -210,31 +196,6 @@ TEE_Result stm32_bsec_write_debug_conf(uint32_t value);
 /* Return debug configuration read from BSEC */
 uint32_t stm32_bsec_read_debug_conf(void);
 
-#ifdef CFG_STM32MP21
-/*
- * Enable/disable debug with temporal isolation level for Cortex-A and Cortex-M
- * @ca_value: Value to write in BSEC debug control register for Cortex-A
- * @cm_value: Value to write in BSEC debug control register for Cortex-M
- * Return a TEE_Result compliant return value
- */
-TEE_Result stm32_bsec_write_debug_ctrl(uint32_t ca_value, uint32_t cm_value);
-
-/*
- * Parse permissions mask and prepare values to feed stm32_bsec_write_debug_conf
- * and stm32_bsec_write_debug_ctrl functions to enable/disable debug
- * @perm_mask: Permissions mask to enable/disable debug features
- * @dbg_en_val: (out) Value to write in BSEC debug enable register
- * @dbg_a_ctrl_val: (out) Value to write in BSEC debug control register for
- *			  Cortex-A
- * @dbg_m_ctrl_val: (out) Value to write in BSEC debug control register for
- *			  Cortex-M
- */
-void stm32_bsec_parse_permissions(uint32_t perm_mask,
-				  uint32_t *dbg_en_val,
-				  uint32_t *dbg_a_ctrl_val,
-				  uint32_t *dbg_m_ctrl_val);
-#endif
-
 /*
  * Write shadow-read lock
  * @otp_id: OTP number
@@ -306,9 +267,14 @@ bool stm32_bsec_nsec_can_access_otp(uint32_t otp_id);
 bool stm32_bsec_self_hosted_debug_is_enabled(void);
 
 /*
- * Program BSEC for dummy ADAC (open access to every AP).
+ * Return true if HDP is enabled.
  */
-void stm32_bsec_mp21_dummy_adac(void);
+bool stm32_bsec_hdp_is_enabled(void);
+
+/*
+ * Return true if coresight peripheral can be used.
+ */
+bool stm32_bsec_coresight_is_enabled(void);
 
 /*
  * Program BSEC to open DBGMCU_APB_AP (AP0)

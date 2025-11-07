@@ -19,19 +19,17 @@ static TEE_Result pta_dbg_grant_dbg_access(uint32_t param_types,
 						   TEE_PARAM_TYPE_NONE,
 						   TEE_PARAM_TYPE_NONE);
 	unsigned int dbg_profile = params[0].value.a;
-	uint32_t dbg_conf = stm32_bsec_read_debug_conf();
 
 	if (param_types != ext_param)
 		return TEE_ERROR_BAD_PARAMETERS;
 
 	switch (dbg_profile) {
 	case PTA_HDP_DBG_PROFILE:
-		if (!(dbg_conf & BSEC_HDPEN))
+		if (!stm32_bsec_hdp_is_enabled())
 			return TEE_ERROR_ACCESS_DENIED;
 		break;
 	case PTA_PERIPHERAL_DBG_PROFILE:
-		if ((dbg_conf & PERIPHERAL_DBG_PROFILE) !=
-		    PERIPHERAL_DBG_PROFILE)
+		if (!stm32_bsec_coresight_is_enabled())
 			return TEE_ERROR_ACCESS_DENIED;
 		break;
 	default:
