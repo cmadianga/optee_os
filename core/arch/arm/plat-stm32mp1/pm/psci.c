@@ -234,6 +234,7 @@ int psci_cpu_off(void)
 }
 #endif
 
+/* Start non-pageable section */
 static int enter_cstop_suspend(unsigned int soc_mode)
 {
 	int rc = 1;
@@ -259,6 +260,7 @@ static int enter_cstop_suspend(unsigned int soc_mode)
 
 	return rc;
 }
+DECLARE_KEEP_PAGER(enter_cstop_suspend);
 
 static int plat_suspend(uint32_t arg)
 {
