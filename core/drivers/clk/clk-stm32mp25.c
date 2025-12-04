@@ -4540,7 +4540,9 @@ static bool clk_stm32_clock_is_critical(struct clk *clk)
 	struct clk *clk_criticals[] = {
 #ifdef CFG_STM32_CM33TDCID
 		&ck_flexgen_63,
+#if defined(CFG_STM32MP25)
 		&ck_icn_p_gicv2m
+#endif
 #else
 		&ck_hsi,
 		&ck_hse,
@@ -4590,7 +4592,9 @@ static bool clk_stm32_clock_is_critical(struct clk *clk)
 		&ck_icn_p_gpioz,
 		&ck_icn_p_ipcc1,
 		&ck_icn_p_ipcc2,
+#if defined(CFG_STM32MP25)
 		&ck_icn_p_gicv2m,
+#endif
 		&ck_icn_p_rtc
 #endif
 	};
