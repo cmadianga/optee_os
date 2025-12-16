@@ -689,13 +689,9 @@ int __weak __psci_cpu_suspend(uint32_t power_state,
 	case STM32_STATE_ID_LP_STOP1:
 		ret = stm32_pwr_domain_suspend(STM32_PM_CSTOP_ALLOW_LP_STOP);
 		break;
-
-#ifdef CFG_STM32MP13
 	case STM32_STATE_ID_LPLV_STOP1:
 		ret = stm32_pwr_domain_suspend(STM32_PM_CSTOP_ALLOW_LPLV_STOP);
 		break;
-#endif
-
 	default:
 	}
 
