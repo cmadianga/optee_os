@@ -4167,6 +4167,7 @@ static bool clk_stm32_clock_is_critical(struct clk *clk __maybe_unused)
 		&ck_icn_p_gpioi,
 		&ck_icn_p_gpioz,
 		&ck_icn_p_ipcc1,
+		&ck_icn_p_rtc
 #endif /* CFG_STM32_CM33TDCID */
 	};
 	size_t i = 0;
