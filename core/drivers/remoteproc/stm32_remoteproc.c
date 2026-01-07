@@ -8,9 +8,6 @@
 #include <drivers/firewall_device.h>
 #include <drivers/rstctrl.h>
 #include <drivers/stm32_remoteproc.h>
-#ifdef CFG_STM32MP15
-#include <drivers/stm32mp1_rcc.h>
-#endif
 #include <keep.h>
 #include <kernel/cache_helpers.h>
 #include <kernel/dt_driver.h>
@@ -909,19 +906,6 @@ static TEE_Result stm32_rproc_probe(const void *fdt, int node,
 		rproc->m33_cr_right = CA35SS_SYSCFG_M33_ACCESS_CR_PRIV;
 	}
 	stm32_rproc_a35ss_cfg(rproc);
-#endif
-
-#ifdef CFG_STM32MP15
-	if (!rproc->cdata->ns_loading) {
-		if (!stm32_rcc_is_secure()) {
-			if (IS_ENABLED(CFG_INSECURE))
-				IMSG("WARNING: insecure rproc support regarding RCC hardening");
-			else
-				panic("RCC secure hardening issue");
-		} else {
-			stm32_rcc_set_mckprot(true);
-		}
-	}
 #endif
 
 	if (!rproc->cdata->ns_loading)
